@@ -5,6 +5,7 @@ import { getRepositories } from "@/lib/repositories";
 import { getRubric } from "@/lib/rubric";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function GET(
   _request: Request,

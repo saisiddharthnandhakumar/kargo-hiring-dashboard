@@ -1,4 +1,4 @@
-import { clamp, round2 } from "@/lib/scoring/aggregate";
+import { SCORE_MAX, SCORE_MIN, clamp, round2 } from "@/lib/scoring/aggregate";
 import type { CandidateScore, ScoreRepository } from "../types";
 import { generateId, mutateStore, nowIso, readStore } from "./store";
 
@@ -44,14 +44,14 @@ export function createMemoryScoreRepository(): ScoreRepository {
 
         existing.overallScore = clamp(
           round2(existing.criteria.reduce((sum, c) => sum + c.weightedScore, 0)),
-          1,
-          5,
+          SCORE_MIN,
+          SCORE_MAX,
         );
 
         const [keyA, keyB] = existing.historicalSignal.criteriaInvolved;
         const scoreA = existing.criteria.find((c) => c.key === keyA)?.score;
         const scoreB = existing.criteria.find((c) => c.key === keyB)?.score;
-        existing.historicalSignal.triggered = scoreA === 5 && scoreB === 5;
+        existing.historicalSignal.triggered = scoreA === SCORE_MAX && scoreB === SCORE_MAX;
 
         draft.auditLog.push({
           id: generateId(),

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { processApplication } from "@/lib/pipeline/process-application";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 /** Runs the full pipeline (extract -> score) for a single NEW or
  * PROCESSING_FAILED application — used by the candidate detail page's

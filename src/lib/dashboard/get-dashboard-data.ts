@@ -52,6 +52,7 @@ function shortLabel(criterionKey: string): string {
     consequence_bearing_decision_making: "Consequence",
     self_initiated_action_under_pressure: "Initiative",
     cross_functional_practice_building: "Practice",
+    loss_institutionalized: "Loss→Process",
   };
   return labels[criterionKey] ?? criterionKey;
 }

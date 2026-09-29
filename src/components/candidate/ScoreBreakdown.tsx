@@ -99,7 +99,7 @@ function CriterionCard({
         </div>
         <div className="text-right">
           <div className="font-mono text-xl font-semibold text-foreground tabular-nums">
-            {criterion.score}/5
+            {criterion.score}/4
           </div>
           <div className="text-xs text-muted">weighted {criterion.weightedScore.toFixed(2)}</div>
         </div>
@@ -146,7 +146,7 @@ function CriterionCard({
               onChange={(e) => setNewScore(e.target.value)}
               className="rounded border border-border bg-background px-2 py-1 text-sm text-foreground"
             >
-              {[1, 2, 3, 4, 5].map((n) => (
+              {[1, 2, 3, 4].map((n) => (
                 <option key={n} value={n}>
                   {n}
                 </option>

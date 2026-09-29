@@ -23,7 +23,7 @@ export function buildInterviewBriefPrompt(input: {
   const criteriaText = input.criteria
     .map(
       (c) =>
-        `- ${c.name} (${c.score}/5, weight ${Math.round(c.weight * 100)}%, confidence ${c.confidence}): ${c.rationale}\n  Evidence: ${c.evidenceRefs.join(" | ")}\n  Missing: ${c.missingEvidence ?? "none noted"}`,
+        `- ${c.name} (${c.score}/4, weight ${Math.round(c.weight * 100)}%, confidence ${c.confidence}): ${c.rationale}\n  Evidence: ${c.evidenceRefs.join(" | ")}\n  Missing: ${c.missingEvidence ?? "none noted"}`,
     )
     .join("\n");
 
@@ -31,7 +31,7 @@ export function buildInterviewBriefPrompt(input: {
     system: SYSTEM,
     prompt: `CANDIDATE: ${input.candidateName}
 ROLE: ${input.roleTitle}
-OVERALL SCORE: ${input.overallScore}/5
+OVERALL SCORE: ${input.overallScore}/4
 
 CRITERION SCORES:
 ${criteriaText}

@@ -21,11 +21,13 @@ const DOMAIN_CRITERION: Record<RoleKey, string> = {
   spm: "logistics_domain_depth",
 };
 
+// Scale is 1-4 (1=Absent, 2=Weak, 3=Present, 4=Strong): treat 3-4 as
+// "present", 1 as "absent", and 2 (Weak) as the ambiguous middle.
 function checkFromCriterionScore(criteria: CriterionResult[], key: string): SignalCheck {
   const criterion = criteria.find((c) => c.key === key);
   if (!criterion) return { status: "unclear", detail: "Criterion not found." };
-  if (criterion.score >= 4) return { status: "present", detail: criterion.rationale };
-  if (criterion.score <= 2) return { status: "absent", detail: criterion.rationale };
+  if (criterion.score >= 3) return { status: "present", detail: criterion.rationale };
+  if (criterion.score <= 1) return { status: "absent", detail: criterion.rationale };
   return { status: "unclear", detail: criterion.rationale };
 }
 
@@ -56,7 +58,7 @@ export interface HistoricalSignalChecks {
  * Three qualitative, evidence-grounded checks for the "historical signals"
  * panel (Screen 2). These are directional/explanatory only — the single
  * deterministic "historical high-signal pattern" flag (both mapped criteria
- * at exactly 5/5) is computed separately in lib/scoring/aggregate.ts and is
+ * at exactly 4/4) is computed separately in lib/scoring/aggregate.ts and is
  * what actually drives the ★ flag elsewhere in the UI.
  */
 export function deriveHistoricalSignalChecks(

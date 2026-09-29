@@ -222,7 +222,7 @@ export interface ScoreRepository {
   applyCriterionOverride(
     applicationId: string,
     criterionKey: string,
-    newScore: 1 | 2 | 3 | 4 | 5,
+    newScore: 1 | 2 | 3 | 4,
     reason: string | null,
     actor: string,
   ): Promise<CandidateScore>;
@@ -263,7 +263,7 @@ export interface BatchRunRepository {
 }
 
 export interface Repositories {
-  mode: "memory" | "supabase";
+  mode: "memory" | "neon";
   candidates: CandidateRepository;
   applications: ApplicationRepository;
   evidence: EvidenceRepository;

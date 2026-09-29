@@ -16,12 +16,12 @@ export default async function RubricPage({
   const rubric = getRubric(role);
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-8">
+    <main className="mx-auto max-w-6xl px-6 py-8">
       <Link href="/dashboard" className="text-xs text-muted hover:text-foreground">
         ← Back to dashboard
       </Link>
       <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold text-foreground">
-        Hiring rubric
+        The Rubric: Deconstructing &ldquo;Good {role === "pm" ? "PM" : "SPM"}&rdquo;
       </h1>
       <p className="mt-1 text-sm text-muted">
         This is the exact rubric the AI scores against — an overlay on the job description, never
@@ -47,49 +47,68 @@ export default async function RubricPage({
         ))}
       </nav>
 
-      <section className="mt-6 flex flex-col gap-4">
-        {rubric.criteria.map((c) => (
-          <article key={c.key} className="rounded-lg border border-border bg-surface p-4">
-            <div className="flex items-start justify-between gap-4">
-              <h2 className="font-medium text-foreground">{c.name}</h2>
-              <span className="shrink-0 font-mono text-sm text-muted">
-                {Math.round(c.weight * 100)}%
-              </span>
-            </div>
-            <p className="mt-1 text-sm text-muted">{c.description}</p>
-
-            <div className="mt-3 flex flex-col gap-2">
-              <AnchorRow score={5} text={c.anchors[5]} />
-              <AnchorRow score={3} text={c.anchors[3]} />
-              <AnchorRow score={1} text={c.anchors[1]} />
-            </div>
-
-            {c.redFlag && (
-              <p className="mt-3 text-xs text-score-low">
-                <span className="font-medium">Red flag:</span> {c.redFlag}
-              </p>
-            )}
-            {c.note && (
-              <p className="mt-2 text-xs text-score-mid">
-                <span className="font-medium">Note:</span> {c.note}
-              </p>
-            )}
-          </article>
-        ))}
-
-        <article className="rounded-lg border border-accent/30 bg-accent/5 p-4">
-          <h2 className="font-medium text-foreground">{rubric.historicalSignalRule.label}</h2>
-          <p className="mt-1 text-sm text-muted">
-            Triggered only when both {rubric.historicalSignalRule.criteriaKeys.join(" AND ")} score
-            exactly 5/5. This combination had a 100% &ldquo;Exceeds&rdquo; hit rate in the 8-hire
-            calibration set — presented as a historical high-signal pattern, never a guaranteed
-            prediction.
-          </p>
-          {rubric.historicalSignalRule.isProxy && (
-            <p className="mt-2 text-xs text-muted">{rubric.historicalSignalRule.proxyExplanation}</p>
-          )}
-        </article>
+      <section className="mt-6 overflow-x-auto rounded-lg border border-border">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-border bg-surface text-left">
+              <th className="min-w-[220px] px-4 py-3 font-medium text-foreground">Criterion</th>
+              <th className="w-20 px-4 py-3 font-medium text-foreground">Weight</th>
+              <th className="min-w-[200px] px-4 py-3 font-medium text-score-low">1 · Absent</th>
+              <th className="min-w-[200px] px-4 py-3 font-medium text-score-mid">2 · Weak</th>
+              <th className="min-w-[200px] px-4 py-3 font-medium text-foreground">3 · Present</th>
+              <th className="min-w-[200px] px-4 py-3 font-medium text-score-high">4 · Strong</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rubric.criteria.map((c, i) => (
+              <tr key={c.key} className={i % 2 === 1 ? "bg-surface/50" : undefined}>
+                <td className="align-top border-t border-border px-4 py-3">
+                  <p className="font-medium text-foreground">{c.name}</p>
+                  <p className="mt-1 text-xs text-muted">{c.description}</p>
+                  {c.redFlag && (
+                    <p className="mt-2 text-xs text-score-low">
+                      <span className="font-medium">Red flag:</span> {c.redFlag}
+                    </p>
+                  )}
+                  {c.note && (
+                    <p className="mt-2 text-xs text-score-mid">
+                      <span className="font-medium">Note:</span> {c.note}
+                    </p>
+                  )}
+                </td>
+                <td className="align-top border-t border-border px-4 py-3 font-mono text-foreground">
+                  {Math.round(c.weight * 100)}%
+                </td>
+                <td className="align-top border-t border-border px-4 py-3 text-foreground">
+                  {c.anchors[1]}
+                </td>
+                <td className="align-top border-t border-border px-4 py-3 text-foreground">
+                  {c.anchors[2]}
+                </td>
+                <td className="align-top border-t border-border px-4 py-3 text-foreground">
+                  {c.anchors[3]}
+                </td>
+                <td className="align-top border-t border-border px-4 py-3 text-foreground">
+                  {c.anchors[4]}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
+
+      <article className="mt-4 rounded-lg border border-accent/30 bg-accent/5 p-4">
+        <h2 className="font-medium text-foreground">{rubric.historicalSignalRule.label}</h2>
+        <p className="mt-1 text-sm text-muted">
+          Triggered only when both {rubric.historicalSignalRule.criteriaKeys.join(" AND ")} score
+          exactly 4/4 (Strong). This combination had a 100% &ldquo;Exceeds&rdquo; hit rate in the
+          8-hire calibration set — presented as a historical high-signal pattern, never a
+          guaranteed prediction.
+        </p>
+        {rubric.historicalSignalRule.isProxy && (
+          <p className="mt-2 text-xs text-muted">{rubric.historicalSignalRule.proxyExplanation}</p>
+        )}
+      </article>
 
       <section className="mt-8">
         <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold text-foreground">
@@ -110,20 +129,5 @@ export default async function RubricPage({
         </div>
       </section>
     </main>
-  );
-}
-
-function AnchorRow({ score, text }: { score: 5 | 3 | 1; text: string }) {
-  const color = score === 5 ? "var(--score-high)" : score === 3 ? "var(--score-mid)" : "var(--score-low)";
-  return (
-    <div className="flex gap-3 text-sm">
-      <span
-        className="mt-0.5 flex h-5 w-7 shrink-0 items-center justify-center rounded border font-mono text-xs"
-        style={{ borderColor: color, color }}
-      >
-        {score}
-      </span>
-      <p className="text-foreground">{text}</p>
-    </div>
   );
 }

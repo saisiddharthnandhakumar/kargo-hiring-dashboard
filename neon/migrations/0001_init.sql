@@ -1,10 +1,16 @@
--- Kargo Hiring Dashboard — initial schema.
+-- Kargo Hiring Dashboard — initial schema, on Neon (Lakebase Postgres).
 -- Mirrors the shapes in src/lib/repositories/types.ts exactly; if that file
--- changes, this migration (and src/lib/repositories/supabase/*) must change
--- with it. Single-founder internal tool: RLS is enabled with NO policies on
--- every table, so the anon/browser key has zero access — every read/write
--- goes through server route handlers using the service-role key, which
--- bypasses RLS entirely.
+-- changes, this migration (and src/lib/repositories/neon/*) must change
+-- with it.
+--
+-- Apply with a DIRECT (unpooled) connection string, per the neon-postgres
+-- skill's migration guidance:
+--   psql "$DATABASE_URL_UNPOOLED" -f neon/migrations/0001_init.sql
+--
+-- No RLS/policies here — unlike the earlier Supabase-targeted migration,
+-- there is no separate anon-vs-service-role key model on this connection.
+-- The app talks to Postgres directly over DATABASE_URL from the server
+-- only; nothing else ever connects to this database.
 
 create extension if not exists "pgcrypto";
 
@@ -57,7 +63,10 @@ create table candidate_evidence (
   application_id uuid not null references applications(id) on delete cascade,
   candidate_name text not null,
   candidate_current_role_title text not null,
-  current_role jsonb not null,
+  -- named current_role_evidence, not current_role: the latter is a
+  -- reserved SQL keyword (an alias for CURRENT_ROLE) and needs quoting
+  -- everywhere it's referenced — simpler to just avoid it.
+  current_role_evidence jsonb not null,
   years_experience jsonb not null,
   companies jsonb not null,
   education jsonb not null,
@@ -167,16 +176,3 @@ create table batch_runs (
   finished_at timestamptz
 );
 create index idx_batch_runs_started on batch_runs (started_at desc);
-
-alter table candidates enable row level security;
-alter table applications enable row level security;
-alter table candidate_evidence enable row level security;
-alter table candidate_scores enable row level security;
-alter table interview_briefs enable row level security;
-alter table email_drafts enable row level security;
-alter table email_logs enable row level security;
-alter table audit_log enable row level security;
-alter table batch_runs enable row level security;
--- No policies defined on any table above => the anon key has zero access.
--- The app only ever talks to Supabase via the service-role key on the
--- server (src/lib/repositories/supabase/client.ts), which bypasses RLS.

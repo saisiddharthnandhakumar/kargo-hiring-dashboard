@@ -1,10 +1,17 @@
 import { getRubric } from "@/lib/rubric";
 import type { AggregateInput, AggregateResult, CriterionResult } from "./types";
 
+/** Single source of truth for the scoring scale (4=Strong, 3=Present,
+ * 2=Weak, 1=Absent). Every other place that validates or clamps a score —
+ * the API schema, the override route, both score repositories — should
+ * import these rather than hardcoding the bounds. */
+export const SCORE_MIN = 1;
+export const SCORE_MAX = 4;
+
 /**
  * Deterministic scoring aggregation. This is the ONLY place overallScore and
  * the historical high-signal flag are computed — never the LLM. The LLM's
- * output is treated purely as per-criterion judgment input (score 1-5 +
+ * output is treated purely as per-criterion judgment input (score 1-4 +
  * evidence); everything below is plain arithmetic and lookups against the
  * versioned rubric in lib/rubric.
  *
@@ -50,10 +57,14 @@ export function aggregateScore(input: AggregateInput): AggregateResult {
       return { ok: false, error: `Unknown criterion key: "${criterionInput.key}"` };
     }
 
-    if (!Number.isInteger(criterionInput.score) || criterionInput.score < 1 || criterionInput.score > 5) {
+    if (
+      !Number.isInteger(criterionInput.score) ||
+      criterionInput.score < SCORE_MIN ||
+      criterionInput.score > SCORE_MAX
+    ) {
       return {
         ok: false,
-        error: `Criterion "${criterionInput.key}" has an invalid score (${criterionInput.score}); must be an integer 1-5`,
+        error: `Criterion "${criterionInput.key}" has an invalid score (${criterionInput.score}); must be an integer ${SCORE_MIN}-${SCORE_MAX}`,
       };
     }
 
@@ -68,13 +79,13 @@ export function aggregateScore(input: AggregateInput): AggregateResult {
   }
 
   const overallScoreRaw = criteria.reduce((sum, c) => sum + c.weightedScore, 0);
-  const overallScore = clamp(round2(overallScoreRaw), 1, 5);
+  const overallScore = clamp(round2(overallScoreRaw), SCORE_MIN, SCORE_MAX);
 
   const rule = rubric.historicalSignalRule;
   const [keyA, keyB] = rule.criteriaKeys;
   const scoreA = criteria.find((c) => c.key === keyA)?.score;
   const scoreB = criteria.find((c) => c.key === keyB)?.score;
-  const triggered = scoreA === 5 && scoreB === 5;
+  const triggered = scoreA === SCORE_MAX && scoreB === SCORE_MAX;
 
   return {
     ok: true,

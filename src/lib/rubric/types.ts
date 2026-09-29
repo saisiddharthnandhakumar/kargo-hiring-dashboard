@@ -1,13 +1,19 @@
 export type RoleKey = "pm" | "spm";
 
+/** 4-point scale: 4=Strong, 3=Present, 2=Weak, 1=Absent. */
 export interface RubricCriterionAnchors {
-  /** What a score of 5/5 looks like, verbatim from the calibrated rubric. */
-  5: string;
-  /** What a score of 3/5 looks like, verbatim from the calibrated rubric. */
+  4: string;
   3: string;
-  /** What a score of 1/5 looks like, verbatim from the calibrated rubric. */
+  2: string;
   1: string;
 }
+
+export const SCORE_LEVEL_LABELS = {
+  4: "Strong",
+  3: "Present",
+  2: "Weak",
+  1: "Absent",
+} as const;
 
 export interface RubricCriterion {
   /** Stable machine key. Used to match LLM output to this criterion and in
@@ -31,8 +37,8 @@ export interface HistoricalPattern {
   whyJdsMissIt: string;
 }
 
-/** Deterministic historical-signal rule: which two criteria, both at 5/5,
- * constitute the "100% Exceeds hit rate" pattern for this role. Computed
+/** Deterministic historical-signal rule: which two criteria, both at 4/4
+ * (Strong), constitute the "100% Exceeds hit rate" pattern for this role. Computed
  * only in lib/scoring/aggregate.ts — never asserted by the LLM. */
 export interface HistoricalSignalRule {
   key: string;

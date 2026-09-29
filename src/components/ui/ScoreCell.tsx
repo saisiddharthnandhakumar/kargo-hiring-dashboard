@@ -1,6 +1,8 @@
+// Thresholds are proportional to the 1-4 scale (80% / 50% of max, same
+// proportions as the old 1-5 scale).
 function scoreColor(score: number): string {
-  if (score >= 4) return "var(--score-high)";
-  if (score >= 2.5) return "var(--score-mid)";
+  if (score >= 3.2) return "var(--score-high)";
+  if (score >= 2) return "var(--score-mid)";
   return "var(--score-low)";
 }
 

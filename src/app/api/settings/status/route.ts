@@ -11,7 +11,7 @@ export async function GET() {
 
   return NextResponse.json({
     repositoryMode: repos.mode,
-    supabaseConfigured: repos.mode === "supabase",
+    neonConfigured: repos.mode === "neon",
     ai: { configured: isAiConfigured(), modelId: getModelId() },
     email: {
       resendConfigured: isResendConfigured(),

@@ -24,4 +24,4 @@ export function isValidRoleKey(value: string): value is RoleKey {
   return value === "pm" || value === "spm";
 }
 
-export const RUBRIC_VERSION = "v1-calibration-8-hires";
+export const RUBRIC_VERSION = "v2-calibration-8-hires-plus-loss-institutionalized";

@@ -7,6 +7,9 @@ import { isValidRoleKey } from "@/lib/rubric";
 import { processApplication } from "@/lib/pipeline/process-application";
 
 export const runtime = "nodejs";
+// Two sequential Gemini calls (extraction + scoring) can take 20-30s+.
+// Vercel Hobby caps effective duration at 60s regardless; raise this on Pro/Fluid if needed.
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   const formData = await request.formData();
@@ -51,8 +54,8 @@ export async function POST(request: Request) {
   const repos = getRepositories();
 
   // MVP demo mode stores parsed text only, not the original file bytes — no
-  // file-storage bucket is wired up yet (Supabase Storage would be the
-  // natural home for this once Milestone 7 activates real Supabase).
+  // file-storage bucket is wired up yet (Neon Object Storage would be the
+  // natural home for this).
   const resumeFilePath = `uploads/${Date.now()}-${file.name}`;
 
   const candidate = await repos.candidates.create({

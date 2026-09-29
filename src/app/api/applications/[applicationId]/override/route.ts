@@ -62,10 +62,10 @@ export async function POST(
       typeof criterionKey !== "string" ||
       !Number.isInteger(scoreNum) ||
       scoreNum < 1 ||
-      scoreNum > 5
+      scoreNum > 4
     ) {
       return NextResponse.json(
-        { error: "criterionScore override requires a criterionKey and an integer value 1-5" },
+        { error: "criterionScore override requires a criterionKey and an integer value 1-4" },
         { status: 400 },
       );
     }
@@ -73,7 +73,7 @@ export async function POST(
       const score = await repos.scores.applyCriterionOverride(
         applicationId,
         criterionKey,
-        scoreNum as 1 | 2 | 3 | 4 | 5,
+        scoreNum as 1 | 2 | 3 | 4,
         reason ?? null,
         actor,
       );

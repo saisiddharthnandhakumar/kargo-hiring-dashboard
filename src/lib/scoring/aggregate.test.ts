@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateScore } from "./aggregate";
+import { aggregateScore, SCORE_MAX, SCORE_MIN } from "./aggregate";
 import { getRubric } from "@/lib/rubric";
 import type { CriterionScoreInput } from "./types";
 
@@ -40,47 +40,65 @@ describe("aggregateScore — weighted math", () => {
     expect(result.overallScore).toBeCloseTo(3, 5);
   });
 
-  it("matches the spec's worked example (criterion 1: 4 x 0.25 = 1.00, criterion 2: 5 x 0.20 = 1.00)", () => {
+  it("matches the rubric's weights (zero_to_one_ownership: 4 x 0.21 = 0.84, logistics_domain_grounding: 4 x 0.17 = 0.68)", () => {
     const result = aggregateScore({
       role: "pm",
       criteria: fullScoreSet("pm", {
         zero_to_one_ownership: 4,
-        logistics_domain_grounding: 5,
+        logistics_domain_grounding: 4,
       }),
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const c1 = result.criteria.find((c) => c.key === "zero_to_one_ownership")!;
     const c2 = result.criteria.find((c) => c.key === "logistics_domain_grounding")!;
-    expect(c1.weightedScore).toBeCloseTo(1.0, 5);
-    expect(c2.weightedScore).toBeCloseTo(1.0, 5);
+    expect(c1.weightedScore).toBeCloseTo(0.84, 5);
+    expect(c2.weightedScore).toBeCloseTo(0.68, 5);
   });
 
-  it("keeps overallScore on a 1-5 scale even at the extremes", () => {
-    const allFives = aggregateScore({ role: "spm", criteria: fullScoreSet("spm", Object.fromEntries(getRubric("spm").criteria.map((c) => [c.key, 5])) as Record<string, number>) });
-    const allOnes = aggregateScore({ role: "spm", criteria: fullScoreSet("spm", Object.fromEntries(getRubric("spm").criteria.map((c) => [c.key, 1])) as Record<string, number>) });
-    expect(allFives.ok && allFives.overallScore).toBe(5);
-    expect(allOnes.ok && allOnes.overallScore).toBe(1);
+  it("keeps overallScore on a 1-4 scale even at the extremes", () => {
+    const allStrong = aggregateScore({
+      role: "spm",
+      criteria: fullScoreSet(
+        "spm",
+        Object.fromEntries(getRubric("spm").criteria.map((c) => [c.key, SCORE_MAX])) as Record<
+          string,
+          number
+        >,
+      ),
+    });
+    const allAbsent = aggregateScore({
+      role: "spm",
+      criteria: fullScoreSet(
+        "spm",
+        Object.fromEntries(getRubric("spm").criteria.map((c) => [c.key, SCORE_MIN])) as Record<
+          string,
+          number
+        >,
+      ),
+    });
+    expect(allStrong.ok && allStrong.overallScore).toBe(SCORE_MAX);
+    expect(allAbsent.ok && allAbsent.overallScore).toBe(SCORE_MIN);
   });
 });
 
 describe("aggregateScore — historical high-signal pattern", () => {
-  it("PM: triggers only when logistics_domain_grounding AND zero_to_one_ownership are both 5, and is labeled as a proxy", () => {
+  it("PM: triggers only when logistics_domain_grounding AND zero_to_one_ownership are both 4 (Strong), and is labeled as a proxy", () => {
     const triggered = aggregateScore({
       role: "pm",
-      criteria: fullScoreSet("pm", { logistics_domain_grounding: 5, zero_to_one_ownership: 5 }),
+      criteria: fullScoreSet("pm", { logistics_domain_grounding: 4, zero_to_one_ownership: 4 }),
     });
     expect(triggered.ok && triggered.historicalSignal.triggered).toBe(true);
     expect(triggered.ok && triggered.historicalSignal.isProxy).toBe(true);
 
     const notTriggered = aggregateScore({
       role: "pm",
-      criteria: fullScoreSet("pm", { logistics_domain_grounding: 5, zero_to_one_ownership: 4 }),
+      criteria: fullScoreSet("pm", { logistics_domain_grounding: 4, zero_to_one_ownership: 3 }),
     });
     expect(notTriggered.ok && notTriggered.historicalSignal.triggered).toBe(false);
   });
 
-  it("PM: a non-logistics candidate is not auto-penalized elsewhere — domain grounding at 1 still allows a valid overall score", () => {
+  it("PM: a non-logistics candidate is not auto-penalized elsewhere — domain grounding at 1 (Absent) still allows a valid overall score", () => {
     const result = aggregateScore({
       role: "pm",
       criteria: fullScoreSet("pm", { logistics_domain_grounding: 1 }),
@@ -92,12 +110,12 @@ describe("aggregateScore — historical high-signal pattern", () => {
     expect(result.historicalSignal.triggered).toBe(false);
   });
 
-  it("SPM: triggers only when logistics_domain_depth AND self_initiated_action_under_pressure are both 5, and is NOT a proxy", () => {
+  it("SPM: triggers only when logistics_domain_depth AND self_initiated_action_under_pressure are both 4 (Strong), and is NOT a proxy", () => {
     const triggered = aggregateScore({
       role: "spm",
       criteria: fullScoreSet("spm", {
-        logistics_domain_depth: 5,
-        self_initiated_action_under_pressure: 5,
+        logistics_domain_depth: 4,
+        self_initiated_action_under_pressure: 4,
       }),
     });
     expect(triggered.ok && triggered.historicalSignal.triggered).toBe(true);
@@ -109,20 +127,20 @@ describe("aggregateScore — validation / conservative-failure behavior", () => 
   it("rejects a non-integer score", () => {
     const result = aggregateScore({
       role: "pm",
-      criteria: fullScoreSet("pm", { zero_to_one_ownership: 4.5 }),
+      criteria: fullScoreSet("pm", { zero_to_one_ownership: 3.5 }),
     });
     expect(result.ok).toBe(false);
   });
 
-  it("rejects a score outside 1-5", () => {
+  it("rejects a score outside 1-4", () => {
     const result = aggregateScore({
       role: "pm",
-      criteria: fullScoreSet("pm", { zero_to_one_ownership: 6 }),
+      criteria: fullScoreSet("pm", { zero_to_one_ownership: 5 }),
     });
     expect(result.ok).toBe(false);
   });
 
-  it("rejects a missing criterion (fewer than 5)", () => {
+  it("rejects a missing criterion", () => {
     const criteria = fullScoreSet("pm").filter((c) => c.key !== "stakeholder_trust_signal");
     const result = aggregateScore({ role: "pm", criteria });
     expect(result.ok).toBe(false);

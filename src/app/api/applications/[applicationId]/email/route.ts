@@ -5,6 +5,7 @@ import { getRepositories, type EmailType } from "@/lib/repositories";
 import { getRubric } from "@/lib/rubric";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 function isEmailType(value: unknown): value is EmailType {
   return value === "interview_invite" || value === "rejection";

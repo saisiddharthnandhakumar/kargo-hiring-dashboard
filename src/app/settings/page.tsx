@@ -64,10 +64,10 @@ export default async function SettingsPage() {
           />
           <ConfigRow
             label="Database"
-            configured={repos.mode === "supabase"}
+            configured={repos.mode === "neon"}
             detail={
-              repos.mode === "supabase"
-                ? "Supabase (Postgres)"
+              repos.mode === "neon"
+                ? "Neon (Lakebase Postgres)"
                 : "Local JSON demo store (seed/.demo-store/db.json)"
             }
           />
