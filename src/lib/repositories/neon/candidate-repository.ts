@@ -34,5 +34,13 @@ export function createNeonCandidateRepository(): CandidateRepository {
       const { rows } = await pool.query("select * from candidates order by created_at desc");
       return rows.map(candidateFromRow);
     },
+
+    async updateName(id, name) {
+      const { rows } = await pool.query(
+        "update candidates set name = $2 where id = $1 returning *",
+        [id, name],
+      );
+      return candidateFromRow(rows[0]);
+    },
   };
 }

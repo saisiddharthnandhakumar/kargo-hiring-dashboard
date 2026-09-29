@@ -20,5 +20,16 @@ export function createMemoryCandidateRepository(): CandidateRepository {
       const store = await readStore();
       return store.candidates;
     },
+
+    async updateName(id, name) {
+      let updated: Candidate | undefined;
+      await mutateStore((draft) => {
+        const candidate = draft.candidates.find((c) => c.id === id);
+        if (!candidate) throw new Error(`Candidate not found: ${id}`);
+        candidate.name = name;
+        updated = candidate;
+      });
+      return updated!;
+    },
   };
 }

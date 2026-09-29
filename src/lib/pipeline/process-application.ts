@@ -81,6 +81,15 @@ export async function processApplication(applicationId: string): Promise<Pipelin
     }),
   );
 
+  // The upload-time name is only a first-line-of-resume guess (see
+  // guessNameFromText); now that the AI has actually read the CV, reconcile
+  // the candidate record with its verified name so the dashboard stops
+  // showing e.g. a LinkedIn headline that happened to be the first line.
+  const aiName = evidenceResult.data.candidate.name.trim();
+  if (aiName && aiName !== candidate.name) {
+    await repos.candidates.updateName(candidate.id, aiName);
+  }
+
   const scoreOutcome = await scoreAndSave({
     applicationId,
     role: application.roleKey,

@@ -183,6 +183,7 @@ export interface CandidateRepository {
   create(input: Omit<Candidate, "id" | "createdAt">): Promise<Candidate>;
   getById(id: string): Promise<Candidate | null>;
   list(): Promise<Candidate[]>;
+  updateName(id: string, name: string): Promise<Candidate>;
 }
 
 export interface ApplicationRepository {
