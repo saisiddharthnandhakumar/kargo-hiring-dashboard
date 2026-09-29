@@ -1,0 +1,5 @@
+Test Candidate
+test.candidate@example.com | +91 98765 43210
+
+SUMMARY
+Plain text CV fixture used only for extract-text.test.ts.
