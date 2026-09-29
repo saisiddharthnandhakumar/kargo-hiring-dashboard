@@ -30,6 +30,16 @@ export function getSupportedExtension(fileName: string): SupportedCvExtension | 
  * PDF.js build with those browser-only references stripped, specifically
  * for this class of environment.
  */
+// Postgres text columns can't store a null byte (\u0000) — it's a valid
+// Unicode scalar but Postgres uses null-terminated C strings internally and
+// rejects it outright on insert. PDF text extraction occasionally produces
+// one from malformed/subsetted font glyphs (surfaces as a pdf.js "TT:
+// undefined function" warning during extraction), which otherwise crashes
+// the upload route with an opaque 500 from the database driver.
+function stripNullBytes(text: string): string {
+  return text.replace(/\u0000/g, "");
+}
+
 export async function extractText(buffer: Buffer, fileName: string): Promise<ExtractedText> {
   const extension = getSupportedExtension(fileName);
   if (!extension) {
@@ -39,13 +49,13 @@ export async function extractText(buffer: Buffer, fileName: string): Promise<Ext
   }
 
   if (extension === "txt") {
-    return { text: buffer.toString("utf-8"), extension };
+    return { text: stripNullBytes(buffer.toString("utf-8")), extension };
   }
 
   if (extension === "docx") {
     const mammoth = await import("mammoth");
     const result = await mammoth.extractRawText({ buffer });
-    return { text: result.value, extension };
+    return { text: stripNullBytes(result.value), extension };
   }
 
   // extension === "pdf"
@@ -53,5 +63,5 @@ export async function extractText(buffer: Buffer, fileName: string): Promise<Ext
   const { extractText: extractPdfText, getDocumentProxy } = await import("unpdf");
   const pdf = await getDocumentProxy(new Uint8Array(buffer));
   const { text } = await extractPdfText(pdf, { mergePages: true });
-  return { text, extension };
+  return { text: stripNullBytes(text), extension };
 }
