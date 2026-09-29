@@ -14,13 +14,21 @@ export function getSupportedExtension(fileName: string): SupportedCvExtension | 
 /**
  * Extracts raw text from a CV file buffer. Dispatches by extension:
  * - .docx via mammoth
- * - .pdf via pdf-parse (dynamically imported — see next.config.ts's
- *   serverExternalPackages and the note below on why this must never be a
- *   static top-level import)
+ * - .pdf via unpdf (dynamically imported)
  * - .txt read as-is
  *
  * Must only be called from server-side code (Node runtime, never edge) —
- * both mammoth and pdf-parse touch Node APIs / the filesystem internally.
+ * mammoth touches Node APIs internally.
+ *
+ * PDF extraction deliberately uses `unpdf`, not `pdf-parse`: `pdf-parse` v2
+ * wraps the standard pdfjs-dist build, which unconditionally constructs
+ * `DOMMatrix` instances for some embedded-font glyph paths (seen on real
+ * resume PDFs with subsetted fonts, e.g. exported from Word/Google Docs) —
+ * that global doesn't exist in Node or Vercel's serverless runtime, so it
+ * crashes with `ReferenceError: DOMMatrix is not defined` on exactly the
+ * PDFs most likely to show up here. `unpdf` ships a serverless-targeted
+ * PDF.js build with those browser-only references stripped, specifically
+ * for this class of environment.
  */
 export async function extractText(buffer: Buffer, fileName: string): Promise<ExtractedText> {
   const extension = getSupportedExtension(fileName);
@@ -41,15 +49,9 @@ export async function extractText(buffer: Buffer, fileName: string): Promise<Ext
   }
 
   // extension === "pdf"
-  // Dynamic import so this never gets pulled into a client bundle and so
-  // pdf-parse's module-load side effects only run when actually needed.
-  // pdf-parse v2 is class-based (no default-function export like v1).
-  const { PDFParse } = await import("pdf-parse");
-  const parser = new PDFParse({ data: buffer });
-  try {
-    const result = await parser.getText();
-    return { text: result.text, extension };
-  } finally {
-    await parser.destroy();
-  }
+  // Dynamic import so this never gets pulled into a client bundle.
+  const { extractText: extractPdfText, getDocumentProxy } = await import("unpdf");
+  const pdf = await getDocumentProxy(new Uint8Array(buffer));
+  const { text } = await extractPdfText(pdf, { mergePages: true });
+  return { text, extension };
 }
