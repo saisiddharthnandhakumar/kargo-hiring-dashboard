@@ -33,7 +33,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${fraunces.variable} ${plexSans.variable} ${jetbrainsMono.variable}`}
+      className={`dark ${fraunces.variable} ${plexSans.variable} ${jetbrainsMono.variable}`}
     >
       <body>
         <TopNav />

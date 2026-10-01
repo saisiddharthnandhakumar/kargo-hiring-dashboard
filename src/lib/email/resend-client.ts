@@ -8,7 +8,7 @@ export interface SendEmailResult {
 }
 
 /**
- * Sends via Resend when RESEND_API_KEY + SENDER_EMAIL are configured;
+ * Sends via Resend when RESEND_API_KEY is configured (SENDER_EMAIL is optional);
  * otherwise simulates the send (no third-party call is made) and logs it as
  * `simulated`. Never called except from an explicit founder "Send" action —
  * this function has no idea what triggered it, so that guarantee lives in

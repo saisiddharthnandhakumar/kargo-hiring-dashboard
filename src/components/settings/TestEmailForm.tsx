@@ -57,7 +57,7 @@ export function TestEmailForm() {
         >
           {result.status === "sent" && "Sent successfully via Resend."}
           {result.status === "simulated" &&
-            "Simulated — no RESEND_API_KEY/SENDER_EMAIL configured yet, so nothing actually went out."}
+            "Simulated — no RESEND_API_KEY configured yet, so nothing actually went out."}
           {result.status === "failed" && `Failed: ${result.error}`}
         </p>
       )}

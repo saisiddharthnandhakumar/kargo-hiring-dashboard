@@ -5,7 +5,7 @@ export const EmailDraftSchema = z.object({
   body: z
     .string()
     .describe(
-      "Full email body, professional and warm, referencing specific evidence from the candidate's CV where natural. Signed off with the sender's name (provided in context) — do not invent a different sender.",
+      "Full plain-text email body with \\n line breaks: greeting line, 2–3 short paragraphs separated by blank lines, then the sign-off on its own lines. Warm, specific to the candidate's CV, signed with the sender's name provided in context.",
     ),
 });
 

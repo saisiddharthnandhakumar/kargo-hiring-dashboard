@@ -1,6 +1,6 @@
 import type { EmailType } from "@/lib/repositories";
 
-export const EMAIL_DRAFT_PROMPT_VERSION = "email-draft.v1";
+export const EMAIL_DRAFT_PROMPT_VERSION = "email-draft.v2";
 
 const SYSTEM = `You draft candidate emails on behalf of a startup founder. The founder will review and edit every word before anything is sent — you are producing a first draft, not a final message.
 
@@ -9,7 +9,8 @@ Mandatory rules:
 2. Sign off with exactly the sender name provided — never invent a different name or title.
 3. Reference the candidate's own evidence naturally and specifically where it strengthens the message (e.g. a real project they mentioned) — never generic flattery.
 4. For a rejection, be warm, brief, and honest without being generic or discouraging — do not fabricate specific feedback that wasn't in the evidence/concerns provided.
-5. Keep it concise — a founder's email, not a corporate HR template.`;
+5. Keep it concise — a founder's email, not a corporate HR template. 2–3 short paragraphs, under 150 words.
+6. Format the body as plain text with real line breaks: the greeting on its own line ("Hi <first name>,"), then each paragraph separated by a blank line, then the sign-off ("Best," newline, sender name) on its own lines. Never return the body as a single paragraph.`;
 
 export function buildEmailDraftPrompt(input: {
   type: EmailType;

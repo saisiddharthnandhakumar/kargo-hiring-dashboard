@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* The app is dark-only; `dark:` keys off the `dark` class on <html>, not the OS setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #0a0a0d;
   --surface: #131317;
@@ -27,6 +30,16 @@
   --status-hired: #4fae6a;
   --status-failed: #c4553f;
 
+  /* shadcn/ui tokens, mapped onto the palette above */
+  --primary: #f2f1ee;
+  --primary-foreground: #0a0a0d;
+  --secondary: #1a1a20;
+  --secondary-foreground: #f2f1ee;
+  --destructive: #c4553f;
+  --destructive-foreground: #f2f1ee;
+  --input: #35353f;
+  --ring: #d4a53c;
+
   --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", monospace;
   --font-sans: var(--font-plex-sans), system-ui, -apple-system, sans-serif;
@@ -47,6 +60,14 @@
   --color-score-high: var(--score-high);
   --color-score-mid: var(--score-mid);
   --color-score-low: var(--score-low);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
   --font-display: var(--font-display);
   --font-mono: var(--font-mono);
   --font-sans: var(--font-sans);

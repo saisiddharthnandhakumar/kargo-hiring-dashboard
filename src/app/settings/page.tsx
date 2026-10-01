@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { TestEmailForm } from "@/components/settings/TestEmailForm";
 import { isAiConfigured, getModelId } from "@/lib/ai/provider";
-import { getSenderConfig, isResendConfigured } from "@/lib/email/config";
+import { getSenderConfig, isResendConfigured, isUsingResendTestSender } from "@/lib/email/config";
 import { getRepositories } from "@/lib/repositories";
 
 export const dynamic = "force-dynamic";
@@ -75,9 +75,11 @@ export default async function SettingsPage() {
             label="Email (Resend)"
             configured={resendConfigured}
             detail={
-              resendConfigured
-                ? `Sending as ${senderName} <${senderEmail}>`
-                : "RESEND_API_KEY / SENDER_EMAIL not set — sends are simulated and logged, never actually delivered"
+              !resendConfigured
+                ? "RESEND_API_KEY not set — sends are simulated and logged, never actually delivered"
+                : isUsingResendTestSender()
+                  ? `Sending as ${senderName} <${senderEmail}>. Resend's test sender only delivers to your own Resend account email — set SENDER_EMAIL on a verified domain to email candidates.`
+                  : `Sending as ${senderName} <${senderEmail}>`
             }
           />
         </div>

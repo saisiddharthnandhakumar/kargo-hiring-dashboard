@@ -9,11 +9,18 @@ export const runtime = "nodejs";
  * ever reached by an explicit founder click in the UI — nothing upstream
  * (scoring, batch processing, brief generation) calls this on its own.
  */
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ applicationId: string; emailId: string }> },
 ) {
   const { applicationId, emailId } = await params;
+  const body = (await request.json().catch(() => ({}))) as { to?: unknown };
+  const overrideTo = typeof body.to === "string" ? body.to.trim() : "";
+  if (overrideTo && !EMAIL_PATTERN.test(overrideTo)) {
+    return NextResponse.json({ error: `"${overrideTo}" is not a valid email address.` }, { status: 400 });
+  }
   const repos = getRepositories();
 
   const draft = await repos.emails.getDraftById(emailId);
@@ -25,15 +32,16 @@ export async function POST(
   if (!application) return NextResponse.json({ error: "Application not found" }, { status: 404 });
 
   const candidate = await repos.candidates.getById(application.candidateId);
-  if (!candidate?.email) {
+  const to = overrideTo || candidate?.email;
+  if (!to) {
     return NextResponse.json(
-      { error: "This candidate has no email address on file — cannot send." },
+      { error: "No email address on file for this candidate — enter one to send." },
       { status: 400 },
     );
   }
 
   const sendResult = await sendEmail({
-    to: candidate.email,
+    to,
     subject: draft.subject,
     body: draft.body,
   });
@@ -41,7 +49,7 @@ export async function POST(
   const emailLog = await repos.emails.createLog({
     emailDraftId: draft.id,
     applicationId,
-    to: candidate.email,
+    to,
     subject: draft.subject,
     resendMessageId: sendResult.resendMessageId,
     status: sendResult.status,
@@ -49,7 +57,10 @@ export async function POST(
   });
 
   if (sendResult.status === "failed") {
-    return NextResponse.json({ emailLog, draft }, { status: 502 });
+    return NextResponse.json(
+      { emailLog, draft, error: `Resend rejected the email: ${sendResult.error}` },
+      { status: 502 },
+    );
   }
 
   const updatedDraft = await repos.emails.markSent(draft.id);
