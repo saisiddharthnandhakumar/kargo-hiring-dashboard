@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { draftCandidateEmail, EMAIL_DRAFT_PROMPT_VERSION } from "@/lib/ai/email-draft";
-import { COMPANY_NAME, getSenderConfig } from "@/lib/email/config";
+import { generateEmailDraft } from "@/lib/pipeline/generate-email-draft";
 import { getRepositories, type EmailType } from "@/lib/repositories";
-import { getRubric } from "@/lib/rubric";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -50,18 +48,15 @@ export async function POST(
 
   const [candidate, score] = await Promise.all([
     repos.candidates.getById(application.candidateId),
-    repos.scores.getByApplicationId(applicationId),
+    repos.scores.getPrimaryByApplicationId(applicationId),
   ]);
   if (!candidate) return NextResponse.json({ error: "Candidate not found" }, { status: 404 });
 
-  const { senderName } = getSenderConfig();
-
-  const result = await draftCandidateEmail({
+  const result = await generateEmailDraft({
+    applicationId,
     type: body.type,
-    candidateName: candidate.name,
-    roleTitle: getRubric(application.roleKey).roleTitle,
-    senderName,
-    companyName: COMPANY_NAME,
+    candidate,
+    roleKey: application.roleKey,
     highlights: score?.strengths ?? [],
     concerns: score?.concerns ?? [],
   });
@@ -70,14 +65,5 @@ export async function POST(
     return NextResponse.json({ error: result.error }, { status: 502 });
   }
 
-  const draft = await repos.emails.createDraft({
-    applicationId,
-    type: body.type,
-    subject: result.data.subject,
-    body: result.data.body,
-    modelId: result.modelId,
-    promptVersion: EMAIL_DRAFT_PROMPT_VERSION,
-  });
-
-  return NextResponse.json({ draft });
+  return NextResponse.json({ draft: result.draft });
 }

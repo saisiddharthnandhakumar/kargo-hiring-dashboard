@@ -11,26 +11,40 @@ function latestByType(drafts: EmailDraft[], type: EmailType): EmailDraft | null 
   return matches[0] ?? null;
 }
 
+function mostRecentDraft(drafts: EmailDraft[]): EmailDraft | null {
+  return [...drafts].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0] ?? null;
+}
+
 export function EmailComposer({
   applicationId,
   candidateEmail,
   initialDrafts,
   initialLogs,
+  /** Starts collapsed to a short preview with an Edit affordance, for use
+   * inside the above-the-fold DecisionBanner — the full composer still
+   * opens inline on Edit, no navigation away. */
+  compact = false,
 }: {
   applicationId: string;
   candidateEmail: string | null;
   initialDrafts: EmailDraft[];
   initialLogs: EmailLog[];
+  compact?: boolean;
 }) {
   const router = useRouter();
-  const [activeType, setActiveType] = useState<EmailType | null>(null);
-  const [draft, setDraft] = useState<EmailDraft | null>(null);
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
+  const existingDraft = mostRecentDraft(initialDrafts);
+  const [activeType, setActiveType] = useState<EmailType | null>(existingDraft?.type ?? null);
+  const [draft, setDraft] = useState<EmailDraft | null>(existingDraft);
+  const [subject, setSubject] = useState(existingDraft?.subject ?? "");
+  const [body, setBody] = useState(existingDraft?.body ?? "");
   const [logs, setLogs] = useState(initialLogs);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sentConfirmation, setSentConfirmation] = useState<string | null>(null);
+  // The auto-drafted email is ready the instant the page loads; compact mode
+  // starts collapsed to a short preview rather than the full editor so the
+  // decision banner stays scannable.
+  const [expanded, setExpanded] = useState(!compact);
 
   function loadDraftIntoEditor(d: EmailDraft) {
     setDraft(d);
@@ -127,14 +141,58 @@ export function EmailComposer({
     }
   }
 
+  const wrapperClass = compact
+    ? ""
+    : "rounded-lg border border-border bg-surface p-4";
+
+  if (compact && !expanded && draft) {
+    return (
+      <div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-foreground">{draft.subject}</p>
+            <p className="mt-0.5 line-clamp-2 text-xs text-muted">{draft.body}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            className="shrink-0 cursor-pointer rounded-md border border-border-strong px-3 py-2 text-xs font-medium text-foreground hover:bg-surface-hover"
+          >
+            Edit
+          </button>
+        </div>
+        {!candidateEmail && (
+          <p className="mt-2 text-xs text-score-mid">
+            No email address on file — Send will be blocked until one is added.
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={send}
+          disabled={loading || !candidateEmail || draft.status === "sent"}
+          title={!candidateEmail ? "No email address on file for this candidate" : undefined}
+          className="mt-3 min-h-11 cursor-pointer rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-accent-foreground disabled:cursor-not-allowed disabled:border disabled:border-border-strong disabled:bg-transparent disabled:text-muted-2"
+        >
+          {draft.status === "sent" ? "Sent" : loading ? "Sending…" : "Send Email"}
+        </button>
+        {sentConfirmation && <p className="mt-2 text-xs text-score-high">{sentConfirmation}</p>}
+        {error && <p className="mt-2 text-xs text-score-low">{error}</p>}
+      </div>
+    );
+  }
+
   return (
-    <section className="rounded-lg border border-border bg-surface p-4">
-      <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold text-foreground">
-        Email composer
-      </h2>
-      <p className="mt-1 text-xs text-muted">
-        AI drafts. You review, edit, and click Send — nothing goes out on its own.
-      </p>
+    <section className={wrapperClass}>
+      {!compact && (
+        <>
+          <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold text-foreground">
+            Email composer
+          </h2>
+          <p className="mt-1 text-xs text-muted">
+            AI drafts. You review, edit, and click Send — nothing goes out on its own.
+          </p>
+        </>
+      )}
 
       <div className="mt-3 flex gap-2">
         <button
@@ -159,6 +217,15 @@ export function EmailComposer({
         >
           Draft Rejection
         </button>
+        {compact && draft && (
+          <button
+            type="button"
+            onClick={() => setExpanded(false)}
+            className="ml-auto cursor-pointer rounded-md border border-border-strong px-3 py-1.5 text-xs text-muted hover:bg-surface-hover"
+          >
+            Collapse
+          </button>
+        )}
       </div>
 
       {!candidateEmail && (
@@ -217,7 +284,7 @@ export function EmailComposer({
                     onClick={send}
                     disabled={loading || !candidateEmail}
                     title={!candidateEmail ? "No email address on file for this candidate" : undefined}
-                    className="cursor-pointer rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground disabled:cursor-not-allowed disabled:border disabled:border-border-strong disabled:bg-transparent disabled:text-muted-2"
+                    className="min-h-11 cursor-pointer rounded-md bg-accent px-4 py-2.5 text-sm font-medium text-accent-foreground disabled:cursor-not-allowed disabled:border disabled:border-border-strong disabled:bg-transparent disabled:text-muted-2"
                   >
                     {loading ? "Sending…" : "Send Email"}
                   </button>

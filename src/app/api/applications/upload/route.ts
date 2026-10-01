@@ -73,6 +73,7 @@ export async function POST(request: Request) {
     roleKey,
     originalRoleKey: roleKey,
     roleOverridden: false,
+    isCalibration: false,
   });
 
   const result = await processApplication(application.id);

@@ -41,13 +41,39 @@ function emptyStore(): DemoStoreShape {
 const STORE_DIR = path.join(process.cwd(), "seed", ".demo-store");
 const STORE_PATH = path.join(STORE_DIR, "db.json");
 
+/** Backfills records written before `roleKey`/`isPrimary` existed on
+ * CandidateScore and `isCalibration` existed on Application, so an older
+ * db.json (or the seed file, pre-migration) keeps working without a manual
+ * schema migration step — there's no formal migration mechanism for the
+ * JSON store. */
+function upgradeStore(store: DemoStoreShape): DemoStoreShape {
+  const roleKeyByApplicationId = new Map(store.applications.map((a) => [a.id, a.roleKey]));
+
+  for (const application of store.applications) {
+    if (application.isCalibration === undefined) {
+      application.isCalibration = false;
+    }
+  }
+
+  for (const score of store.scores) {
+    if (score.roleKey === undefined) {
+      score.roleKey = roleKeyByApplicationId.get(score.applicationId) ?? "pm";
+    }
+    if (score.isPrimary === undefined) {
+      score.isPrimary = true;
+    }
+  }
+
+  return store;
+}
+
 async function readStoreFromDisk(): Promise<DemoStoreShape> {
   try {
     const raw = await fs.readFile(STORE_PATH, "utf-8");
     const parsed = JSON.parse(raw) as Partial<DemoStoreShape>;
     // Merge over an empty store so a store file written by an older schema
     // (missing a newly-added collection) doesn't crash the app.
-    return { ...emptyStore(), ...parsed };
+    return upgradeStore({ ...emptyStore(), ...parsed });
   } catch (err) {
     if (isNodeError(err) && err.code === "ENOENT") {
       const fresh = emptyStore();

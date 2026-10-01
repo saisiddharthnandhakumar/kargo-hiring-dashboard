@@ -28,6 +28,12 @@ export default async function RubricPage({
         a replacement for it. AI scores never hide behind a single number; this page is always
         available so you can check the anchors yourself.
       </p>
+      <Link
+        href="/calibration-set"
+        className="mt-2 inline-block text-xs text-accent underline underline-offset-4 hover:text-foreground"
+      >
+        View the 8-hire calibration set this rubric was built from →
+      </Link>
 
       <nav aria-label="Select role" className="mt-6 flex gap-1 border-b border-border">
         {(["pm", "spm"] as const).map((key) => (

@@ -1,6 +1,9 @@
 import { getRepositories } from "@/lib/repositories";
 import type { Application, ApplicationStatus } from "@/lib/repositories";
+import { AUTO_DRAFT_SCORE_THRESHOLD } from "@/lib/scoring/thresholds";
 import { getRubric, type RoleKey } from "@/lib/rubric";
+
+const OTHER_ROLE: Record<RoleKey, RoleKey> = { pm: "spm", spm: "pm" };
 
 export interface DashboardCriterionCell {
   key: string;
@@ -17,6 +20,7 @@ export interface DashboardRow {
   overallScore: number | null;
   criteria: DashboardCriterionCell[];
   historicalSignalTriggered: boolean | null;
+  crossRoleFit: { roleKey: RoleKey; overallScore: number } | null;
   status: ApplicationStatus;
   processingError: string | null;
 }
@@ -59,16 +63,23 @@ function shortLabel(criterionKey: string): string {
 
 export async function getDashboardData(role: RoleKey): Promise<DashboardData> {
   const repos = getRepositories();
-  const applications = await repos.applications.list({ roleKey: role });
+  const applications = await repos.applications.list({ roleKey: role, isCalibration: false });
   const rubric = getRubric(role);
 
   const rows: DashboardRow[] = await Promise.all(
     applications.map(async (application: Application) => {
-      const [candidate, evidence, score] = await Promise.all([
+      const [candidate, evidence, allScores] = await Promise.all([
         repos.candidates.getById(application.candidateId),
         repos.evidence.getByApplicationId(application.id),
-        repos.scores.getByApplicationId(application.id),
+        repos.scores.getAllByApplicationId(application.id),
       ]);
+
+      const score = allScores.find((s) => s.isPrimary) ?? null;
+      const secondaryScore = allScores.find((s) => s.roleKey === OTHER_ROLE[application.roleKey]) ?? null;
+      const crossRoleFit =
+        secondaryScore && secondaryScore.overallScore >= AUTO_DRAFT_SCORE_THRESHOLD
+          ? { roleKey: secondaryScore.roleKey, overallScore: secondaryScore.overallScore }
+          : null;
 
       const criteria: DashboardCriterionCell[] = rubric.criteria.map((c) => ({
         key: c.key,
@@ -85,6 +96,7 @@ export async function getDashboardData(role: RoleKey): Promise<DashboardData> {
         overallScore: score?.overallScore ?? null,
         criteria,
         historicalSignalTriggered: score?.historicalSignal.triggered ?? null,
+        crossRoleFit,
         status: application.status,
         processingError: application.processingError,
       };

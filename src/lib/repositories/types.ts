@@ -51,6 +51,10 @@ export interface Application {
   roleKey: RoleKey;
   originalRoleKey: RoleKey;
   roleOverridden: boolean;
+  /** True for the 8 seeded past-hire records used to calibrate the rubric —
+   * excluded from the live dashboard, shown only on the read-only
+   * /calibration-set reference view. */
+  isCalibration: boolean;
   status: ApplicationStatus;
   processingError: string | null;
   createdAt: string;
@@ -88,6 +92,13 @@ export interface CandidateEvidence {
 export interface CandidateScore {
   id: string;
   applicationId: string;
+  /** Which rubric this score was computed against — PM and SPM scores can
+   * now coexist for the same application. */
+  roleKey: RoleKey;
+  /** True for the score against application.roleKey (shown as the
+   * candidate's main score); false for the secondary cross-role score used
+   * only to surface an "also fits {role}" signal. */
+  isPrimary: boolean;
   overallScore: number;
   whySurfaced: string;
   criteria: CriterionResult[];
@@ -191,7 +202,11 @@ export interface ApplicationRepository {
     input: Omit<Application, "id" | "createdAt" | "updatedAt" | "status" | "processingError">,
   ): Promise<Application>;
   getById(id: string): Promise<Application | null>;
-  list(filter?: { status?: ApplicationStatus; roleKey?: RoleKey }): Promise<Application[]>;
+  list(filter?: {
+    status?: ApplicationStatus;
+    roleKey?: RoleKey;
+    isCalibration?: boolean;
+  }): Promise<Application[]>;
   listByStatuses(statuses: ApplicationStatus[]): Promise<Application[]>;
   updateStatus(
     id: string,
@@ -215,11 +230,20 @@ export interface EvidenceRepository {
 }
 
 export interface ScoreRepository {
+  /** Keyed by (applicationId, roleKey) — an application can hold one score
+   * per rubric it's been evaluated against (its primary role, plus an
+   * optional secondary cross-role score). */
   upsert(
     applicationId: string,
-    score: Omit<CandidateScore, "id" | "applicationId" | "createdAt">,
+    roleKey: RoleKey,
+    score: Omit<CandidateScore, "id" | "applicationId" | "roleKey" | "createdAt">,
   ): Promise<CandidateScore>;
-  getByApplicationId(applicationId: string): Promise<CandidateScore | null>;
+  /** The score against the application's current roleKey — this is what
+   * every existing caller (dashboard, email, brief, override) actually
+   * wants and is the drop-in replacement for the old single-score lookup. */
+  getPrimaryByApplicationId(applicationId: string): Promise<CandidateScore | null>;
+  /** Both the primary and (if present) secondary cross-role score. */
+  getAllByApplicationId(applicationId: string): Promise<CandidateScore[]>;
   applyCriterionOverride(
     applicationId: string,
     criterionKey: string,

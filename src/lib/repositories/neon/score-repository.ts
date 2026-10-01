@@ -7,15 +7,16 @@ export function createNeonScoreRepository(): ScoreRepository {
   const pool = getPool();
 
   return {
-    async upsert(applicationId, s) {
+    async upsert(applicationId, roleKey, s) {
       const { rows } = await pool.query(
         `insert into candidate_scores (
-           application_id, overall_score, why_surfaced, criteria,
+           application_id, role_key, is_primary, overall_score, why_surfaced, criteria,
            historical_signal, strengths, concerns, interview_questions,
            model_id, prompt_version
          )
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         on conflict (application_id) do update set
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         on conflict (application_id, role_key) do update set
+           is_primary = excluded.is_primary,
            overall_score = excluded.overall_score,
            why_surfaced = excluded.why_surfaced,
            criteria = excluded.criteria,
@@ -28,6 +29,8 @@ export function createNeonScoreRepository(): ScoreRepository {
          returning *`,
         [
           applicationId,
+          roleKey,
+          s.isPrimary,
           s.overallScore,
           s.whySurfaced,
           JSON.stringify(s.criteria),
@@ -42,12 +45,20 @@ export function createNeonScoreRepository(): ScoreRepository {
       return scoreFromRow(rows[0]);
     },
 
-    async getByApplicationId(applicationId) {
+    async getPrimaryByApplicationId(applicationId) {
+      const { rows } = await pool.query(
+        "select * from candidate_scores where application_id = $1 and is_primary = true",
+        [applicationId],
+      );
+      return rows[0] ? scoreFromRow(rows[0]) : null;
+    },
+
+    async getAllByApplicationId(applicationId) {
       const { rows } = await pool.query(
         "select * from candidate_scores where application_id = $1",
         [applicationId],
       );
-      return rows[0] ? scoreFromRow(rows[0]) : null;
+      return rows.map(scoreFromRow);
     },
 
     async applyCriterionOverride(applicationId, criterionKey, newScore, reason, actor) {
@@ -56,7 +67,7 @@ export function createNeonScoreRepository(): ScoreRepository {
         await client.query("begin");
 
         const { rows: existingRows } = await client.query(
-          "select * from candidate_scores where application_id = $1 for update",
+          "select * from candidate_scores where application_id = $1 and is_primary = true for update",
           [applicationId],
         );
         if (!existingRows[0]) {
@@ -86,7 +97,7 @@ export function createNeonScoreRepository(): ScoreRepository {
         const { rows } = await client.query(
           `update candidate_scores
            set criteria = $2, overall_score = $3, historical_signal = $4
-           where application_id = $1
+           where application_id = $1 and is_primary = true
            returning *`,
           [
             applicationId,

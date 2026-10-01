@@ -8,10 +8,10 @@ export function createNeonApplicationRepository(): ApplicationRepository {
   return {
     async create(input) {
       const { rows } = await pool.query(
-        `insert into applications (candidate_id, role_key, original_role_key, role_overridden)
-         values ($1, $2, $3, $4)
+        `insert into applications (candidate_id, role_key, original_role_key, role_overridden, is_calibration)
+         values ($1, $2, $3, $4, $5)
          returning *`,
-        [input.candidateId, input.roleKey, input.originalRoleKey, input.roleOverridden],
+        [input.candidateId, input.roleKey, input.originalRoleKey, input.roleOverridden, input.isCalibration],
       );
       return applicationFromRow(rows[0]);
     },
@@ -31,6 +31,10 @@ export function createNeonApplicationRepository(): ApplicationRepository {
       if (filter?.roleKey) {
         params.push(filter.roleKey);
         conditions.push(`role_key = $${params.length}`);
+      }
+      if (filter?.isCalibration !== undefined) {
+        params.push(filter.isCalibration);
+        conditions.push(`is_calibration = $${params.length}`);
       }
       const where = conditions.length > 0 ? `where ${conditions.join(" and ")}` : "";
       const { rows } = await pool.query(

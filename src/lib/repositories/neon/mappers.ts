@@ -34,6 +34,7 @@ export function applicationFromRow(row: Record<string, unknown>): Application {
     roleKey: row.role_key as Application["roleKey"],
     originalRoleKey: row.original_role_key as Application["originalRoleKey"],
     roleOverridden: row.role_overridden as boolean,
+    isCalibration: Boolean(row.is_calibration),
     status: row.status as Application["status"],
     processingError: (row.processing_error as string | null) ?? null,
     createdAt: (row.created_at as Date).toISOString(),
@@ -71,6 +72,8 @@ export function scoreFromRow(row: Record<string, unknown>): CandidateScore {
   return {
     id: row.id as string,
     applicationId: row.application_id as string,
+    roleKey: row.role_key as CandidateScore["roleKey"],
+    isPrimary: Boolean(row.is_primary),
     overallScore: Number(row.overall_score),
     whySurfaced: row.why_surfaced as string,
     criteria: row.criteria as CandidateScore["criteria"],

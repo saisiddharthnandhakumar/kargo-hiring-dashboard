@@ -30,7 +30,7 @@ export async function POST(
   const [candidate, evidence, score] = await Promise.all([
     repos.candidates.getById(application.candidateId),
     repos.evidence.getByApplicationId(applicationId),
-    repos.scores.getByApplicationId(applicationId),
+    repos.scores.getPrimaryByApplicationId(applicationId),
   ]);
 
   if (!candidate || !evidence || !score) {

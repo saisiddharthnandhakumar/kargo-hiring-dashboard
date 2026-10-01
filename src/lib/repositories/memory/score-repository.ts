@@ -4,13 +4,16 @@ import { generateId, mutateStore, nowIso, readStore } from "./store";
 
 export function createMemoryScoreRepository(): ScoreRepository {
   return {
-    async upsert(applicationId, score) {
+    async upsert(applicationId, roleKey, score) {
       return mutateStore((draft) => {
-        const existingIndex = draft.scores.findIndex((s) => s.applicationId === applicationId);
+        const existingIndex = draft.scores.findIndex(
+          (s) => s.applicationId === applicationId && s.roleKey === roleKey,
+        );
         const record: CandidateScore = {
           ...score,
           id: existingIndex >= 0 ? draft.scores[existingIndex]!.id : generateId(),
           applicationId,
+          roleKey,
           createdAt: nowIso(),
         };
         if (existingIndex >= 0) {
@@ -22,14 +25,19 @@ export function createMemoryScoreRepository(): ScoreRepository {
       });
     },
 
-    async getByApplicationId(applicationId) {
+    async getPrimaryByApplicationId(applicationId) {
       const store = await readStore();
-      return store.scores.find((s) => s.applicationId === applicationId) ?? null;
+      return store.scores.find((s) => s.applicationId === applicationId && s.isPrimary) ?? null;
+    },
+
+    async getAllByApplicationId(applicationId) {
+      const store = await readStore();
+      return store.scores.filter((s) => s.applicationId === applicationId);
     },
 
     async applyCriterionOverride(applicationId, criterionKey, newScore, reason, actor) {
       return mutateStore((draft) => {
-        const existing = draft.scores.find((s) => s.applicationId === applicationId);
+        const existing = draft.scores.find((s) => s.applicationId === applicationId && s.isPrimary);
         if (!existing) {
           throw new Error(`No score to override for application: ${applicationId}`);
         }

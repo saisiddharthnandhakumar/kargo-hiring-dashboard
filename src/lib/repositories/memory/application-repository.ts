@@ -29,6 +29,7 @@ export function createMemoryApplicationRepository(): ApplicationRepository {
       return store.applications.filter((a) => {
         if (filter?.status && a.status !== filter.status) return false;
         if (filter?.roleKey && a.roleKey !== filter.roleKey) return false;
+        if (filter?.isCalibration !== undefined && a.isCalibration !== filter.isCalibration) return false;
         return true;
       });
     },
