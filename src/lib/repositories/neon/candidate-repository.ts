@@ -35,8 +35,11 @@ export function createNeonCandidateRepository(): CandidateRepository {
       return rows.map(candidateFromRow);
     },
 
-    async findByRawText(rawText) {
-      const { rows } = await pool.query("select * from candidates where raw_text = $1", [rawText]);
+    async findPossibleDuplicates({ rawText, email }) {
+      const { rows } = await pool.query(
+        "select * from candidates where raw_text = $1 or ($2::text is not null and lower(email) = lower($2))",
+        [rawText, email],
+      );
       return rows.map(candidateFromRow);
     },
 

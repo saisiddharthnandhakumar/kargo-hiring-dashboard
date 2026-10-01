@@ -194,9 +194,10 @@ export interface CandidateRepository {
   create(input: Omit<Candidate, "id" | "createdAt">): Promise<Candidate>;
   getById(id: string): Promise<Candidate | null>;
   list(): Promise<Candidate[]>;
-  /** Candidates whose stored CV text is byte-identical — used to stop the
-   * same CV being uploaded onto a shortlist twice. */
-  findByRawText(rawText: string): Promise<Candidate[]>;
+  /** Candidates who look like the same person: byte-identical CV text, or
+   * the same email address (case-insensitive) — catches the same CV
+   * re-exported as PDF vs DOCX. Used to stop duplicates being processed. */
+  findPossibleDuplicates(input: { rawText: string; email: string | null }): Promise<Candidate[]>;
   updateName(id: string, name: string): Promise<Candidate>;
 }
 

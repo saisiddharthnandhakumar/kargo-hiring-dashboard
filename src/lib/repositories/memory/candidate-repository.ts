@@ -21,9 +21,12 @@ export function createMemoryCandidateRepository(): CandidateRepository {
       return store.candidates;
     },
 
-    async findByRawText(rawText) {
+    async findPossibleDuplicates({ rawText, email }) {
       const store = await readStore();
-      return store.candidates.filter((c) => c.rawText === rawText);
+      const lowerEmail = email?.toLowerCase();
+      return store.candidates.filter(
+        (c) => c.rawText === rawText || (lowerEmail && c.email?.toLowerCase() === lowerEmail),
+      );
     },
 
     async updateName(id, name) {

@@ -53,21 +53,37 @@ export async function POST(request: Request) {
 
   const repos = getRepositories();
 
-  // Same CV, same role → never a second row on the shortlist. The exact
-  // extracted text is the identity check: a re-saved or re-exported file
-  // with any real change still goes through as a new application.
-  const sameCv = await repos.candidates.findByRawText(rawText);
-  if (sameCv.length > 0) {
-    const sameCvIds = new Set(sameCv.map((c) => c.id));
+  // Same person, same role → never a second row on the shortlist, and no AI
+  // calls spent on them. Checked before any model call: an identical CV text
+  // (a straight re-upload) or the same name + email (the same CV saved as
+  // PDF vs DOCX, or a lightly edited version).
+  //
+  // Email alone isn't enough: shared inboxes/placeholder addresses are real
+  // (several test CVs use one school address for different people), so an
+  // email match only counts if the existing candidate's AI-verified name
+  // also appears in this CV.
+  const email = extractFirstEmail(rawText);
+  const lowerText = rawText.toLowerCase();
+  const possibleDuplicates = (await repos.candidates.findPossibleDuplicates({ rawText, email })).filter(
+    (c) => c.rawText === rawText || (c.name.trim().length > 0 && lowerText.includes(c.name.trim().toLowerCase())),
+  );
+  if (possibleDuplicates.length > 0) {
+    const byId = new Map(possibleDuplicates.map((c) => [c.id, c]));
     const existing = (await repos.applications.list({ roleKey, isCalibration: false })).find((a) =>
-      sameCvIds.has(a.candidateId),
+      byId.has(a.candidateId),
     );
     if (existing) {
-      const name = sameCv.find((c) => c.id === existing.candidateId)?.name ?? "This candidate";
+      const match = byId.get(existing.candidateId)!;
+      const reason = match.rawText === rawText ? "identical CV" : "same name and email";
       return NextResponse.json(
         {
-          error: `${name} is already on the ${roleKey.toUpperCase()} shortlist — this CV was uploaded before.`,
-          applicationId: existing.id,
+          error: `Duplicate of ${match.name} (${match.resumeFileName}), already on the ${roleKey.toUpperCase()} shortlist — ${reason}. Not processed.`,
+          duplicate: {
+            applicationId: existing.id,
+            candidateName: match.name,
+            fileName: match.resumeFileName,
+            reason,
+          },
         },
         { status: 409 },
       );
@@ -81,7 +97,7 @@ export async function POST(request: Request) {
 
   const candidate = await repos.candidates.create({
     name: candidateName,
-    email: extractFirstEmail(rawText),
+    email,
     phone: extractFirstPhone(rawText),
     resumeFileName: file.name,
     resumeFilePath,

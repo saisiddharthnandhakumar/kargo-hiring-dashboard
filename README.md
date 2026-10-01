@@ -45,6 +45,13 @@ This project is already linked to a live Neon project (`neon link`, `.neon`) and
 
 - **One CV**: dashboard → pick a role tab → "Upload CV" → choose a PDF/DOCX/TXT file. Extraction
   and scoring run immediately; you'll see the new row once it finishes.
+- **A folder of CVs**: dashboard → "Choose folder" (or drag a folder onto the upload card). Every
+  PDF/DOCX/TXT inside it, at any depth, is ranked two at a time with live per-file progress.
+  Other files (`.DS_Store`, images, Word lock files) are ignored. Keep the tab open until it finishes.
+- **Duplicates are never processed.** Before upload, byte-identical copies within the folder are
+  skipped. On the server, before any AI call, a CV is refused (HTTP 409) if that role already has
+  the same person: identical CV text, or the same email *and* the existing candidate's name
+  appears in the new CV. Email alone isn't trusted because shared/placeholder addresses happen.
 - **All CVs in `seed/applications/`**: dashboard → "Process All Applications". This scans that
   folder plus any previously-failed applications, processes them one at a time (never in
   parallel — see "Known limitations"), and shows live `n/total` progress. One bad CV never stops
