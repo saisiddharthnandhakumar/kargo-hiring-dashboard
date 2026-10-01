@@ -14,6 +14,9 @@ export interface CriterionScoreInput {
 export interface AggregateInput {
   role: RoleKey;
   criteria: CriterionScoreInput[];
+  /** Founder-edited weights (criterion key → fraction of 1). Any key not
+   * present falls back to the calibrated rubric default. */
+  weights?: Record<string, number>;
 }
 
 /** A criterion result after deterministic aggregation — weight and

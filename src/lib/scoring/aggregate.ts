@@ -68,12 +68,13 @@ export function aggregateScore(input: AggregateInput): AggregateResult {
       };
     }
 
-    const weightedScore = round2(criterionInput.score * definition.weight);
+    const weight = input.weights?.[definition.key] ?? definition.weight;
+    const weightedScore = round2(criterionInput.score * weight);
 
     criteria.push({
       ...criterionInput,
       name: definition.name,
-      weight: definition.weight,
+      weight,
       weightedScore,
     });
   }
@@ -101,6 +102,28 @@ export function aggregateScore(input: AggregateInput): AggregateResult {
       criteriaInvolved: rule.criteriaKeys,
     },
   };
+}
+
+/**
+ * Re-applies a new weight set to an already-scored candidate — pure
+ * arithmetic over the stored per-criterion scores, no model call. Used
+ * when the founder edits rubric weights, so every existing score is
+ * brought in line with exactly the math aggregateScore would have done.
+ */
+export function reweightCriteria(
+  criteria: CriterionResult[],
+  weights: Record<string, number>,
+): { criteria: CriterionResult[]; overallScore: number } {
+  const reweighted = criteria.map((c) => {
+    const weight = weights[c.key] ?? c.weight;
+    return { ...c, weight, weightedScore: round2(c.score * weight) };
+  });
+  const overallScore = clamp(
+    round2(reweighted.reduce((sum, c) => sum + c.weightedScore, 0)),
+    SCORE_MIN,
+    SCORE_MAX,
+  );
+  return { criteria: reweighted, overallScore };
 }
 
 /** Exported so any other code path that must recompute a weighted score

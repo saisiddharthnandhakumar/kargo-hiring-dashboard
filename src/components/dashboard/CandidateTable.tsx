@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Check, Mail, X as XIcon } from "lucide-react";
 import { CrossRoleFitBadge } from "@/components/candidate/CrossRoleFitBadge";
 import { EmailDraftModal } from "@/components/dashboard/EmailDraftModal";
@@ -62,7 +63,9 @@ function EmailAction({ row, onOpen }: { row: DashboardRow; onOpen: (type: EmailT
     );
   }
 
-  const type: EmailType = row.email?.type ?? (passed ? "interview_invite" : "rejection");
+  // Follows the current verdict, not an older draft: re-weighting the rubric
+  // can flip a candidate across the pass line after a draft was written.
+  const type: EmailType = passed ? "interview_invite" : "rejection";
   const label = type === "interview_invite" ? "Draft invite" : "Draft rejection";
 
   return (
@@ -82,7 +85,21 @@ function EmailAction({ row, onOpen }: { row: DashboardRow; onOpen: (type: EmailT
 }
 
 export function CandidateTable({ rows, readOnly = false }: { rows: DashboardRow[]; readOnly?: boolean }) {
+  const router = useRouter();
   const [open, setOpen] = useState<{ row: DashboardRow; type: EmailType } | null>(null);
+
+  // The whole row opens the candidate — except clicks on its own buttons and
+  // links (email actions, badges), and drags that were selecting text.
+  function openRow(event: MouseEvent<HTMLTableRowElement>, applicationId: string) {
+    if ((event.target as HTMLElement).closest("a, button, input, textarea, select, [role='button']")) return;
+    if (window.getSelection()?.toString()) return;
+    const href = `/candidates/${applicationId}`;
+    if (event.metaKey || event.ctrlKey) {
+      window.open(href, "_blank", "noopener");
+    } else {
+      router.push(href);
+    }
+  }
 
   if (rows.length === 0) {
     return (
@@ -114,13 +131,18 @@ export function CandidateTable({ rows, readOnly = false }: { rows: DashboardRow[
           </thead>
           <tbody>
             {rows.map((row, index) => (
-              <tr key={row.applicationId} className="border-b border-border align-top last:border-0 hover:bg-surface-hover/60">
+              <tr
+                key={row.applicationId}
+                onClick={(e) => openRow(e, row.applicationId)}
+                onMouseEnter={() => router.prefetch(`/candidates/${row.applicationId}`)}
+                className="group cursor-pointer border-b border-border align-top transition-colors last:border-0 hover:bg-surface-hover/60"
+              >
                 <td className="px-4 py-4 font-mono text-xs text-muted-2">{index + 1}</td>
                 <td className="min-w-[18rem] px-4 py-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <Link
                       href={`/candidates/${row.applicationId}`}
-                      className="text-[15px] font-semibold text-foreground underline-offset-4 hover:underline"
+                      className="text-[15px] font-semibold text-foreground underline-offset-4 group-hover:underline"
                     >
                       {row.candidateName}
                     </Link>

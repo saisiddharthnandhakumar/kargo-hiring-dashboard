@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateScore, SCORE_MAX, SCORE_MIN } from "./aggregate";
+import { aggregateScore, reweightCriteria, SCORE_MAX, SCORE_MIN } from "./aggregate";
 import { getRubric } from "@/lib/rubric";
 import type { CriterionScoreInput } from "./types";
 
@@ -164,5 +164,39 @@ describe("aggregateScore — validation / conservative-failure behavior", () => 
     criteria[1] = { ...second, key: first.key };
     const result = aggregateScore({ role: "pm", criteria });
     expect(result.ok).toBe(false);
+  });
+});
+
+describe("founder-edited weights", () => {
+  // All weight on the first criterion: overall must equal that one score.
+  function allOnFirst(role: "pm" | "spm") {
+    const keys = getRubric(role).criteria.map((c) => c.key);
+    return Object.fromEntries(keys.map((k, i) => [k, i === 0 ? 1 : 0]));
+  }
+
+  it("aggregateScore uses the override weights instead of the calibrated defaults", () => {
+    const firstKey = getRubric("pm").criteria[0]!.key;
+    const result = aggregateScore({
+      role: "pm",
+      criteria: fullScoreSet("pm", { [firstKey]: 4 }),
+      weights: allOnFirst("pm"),
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.overallScore).toBe(4);
+    expect(result.criteria.find((c) => c.key === firstKey)?.weight).toBe(1);
+  });
+
+  it("reweightCriteria matches what aggregateScore would compute from scratch", () => {
+    const firstKey = getRubric("spm").criteria[0]!.key;
+    const scores = fullScoreSet("spm", { [firstKey]: 1 });
+    const original = aggregateScore({ role: "spm", criteria: scores });
+    const fresh = aggregateScore({ role: "spm", criteria: scores, weights: allOnFirst("spm") });
+    expect(original.ok && fresh.ok).toBe(true);
+    if (!original.ok || !fresh.ok) return;
+
+    const reweighted = reweightCriteria(original.criteria, allOnFirst("spm"));
+    expect(reweighted.overallScore).toBe(fresh.overallScore);
+    expect(reweighted.criteria).toEqual(fresh.criteria);
   });
 });

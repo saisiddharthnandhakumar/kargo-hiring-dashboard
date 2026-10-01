@@ -9,7 +9,8 @@ import type {
   EmailLog,
   InterviewBrief,
 } from "@/lib/repositories";
-import { getRubric, type Rubric, type RoleKey } from "@/lib/rubric";
+import { type Rubric, type RoleKey } from "@/lib/rubric";
+import { getEffectiveRubric } from "@/lib/rubric/effective";
 import { AUTO_DRAFT_SCORE_THRESHOLD } from "@/lib/scoring/thresholds";
 import { deriveHistoricalSignalChecks, type HistoricalSignalChecks } from "./historical-signals";
 
@@ -58,7 +59,7 @@ export async function getCandidateDetail(applicationId: string): Promise<Candida
       ? { roleKey: secondaryScore.roleKey, overallScore: secondaryScore.overallScore }
       : null;
 
-  const rubric = getRubric(application.roleKey);
+  const rubric = await getEffectiveRubric(application.roleKey);
   const historicalChecks =
     evidence && score ? deriveHistoricalSignalChecks(application.roleKey, score.criteria, evidence) : null;
 

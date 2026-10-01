@@ -35,6 +35,11 @@ export function createNeonCandidateRepository(): CandidateRepository {
       return rows.map(candidateFromRow);
     },
 
+    async findByRawText(rawText) {
+      const { rows } = await pool.query("select * from candidates where raw_text = $1", [rawText]);
+      return rows.map(candidateFromRow);
+    },
+
     async updateName(id, name) {
       const { rows } = await pool.query(
         "update candidates set name = $2 where id = $1 returning *",

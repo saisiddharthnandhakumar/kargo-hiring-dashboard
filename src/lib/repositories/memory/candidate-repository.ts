@@ -21,6 +21,11 @@ export function createMemoryCandidateRepository(): CandidateRepository {
       return store.candidates;
     },
 
+    async findByRawText(rawText) {
+      const store = await readStore();
+      return store.candidates.filter((c) => c.rawText === rawText);
+    },
+
     async updateName(id, name) {
       let updated: Candidate | undefined;
       await mutateStore((draft) => {

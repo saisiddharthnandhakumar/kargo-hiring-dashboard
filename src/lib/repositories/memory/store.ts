@@ -10,6 +10,8 @@ import type {
   EmailDraft,
   EmailLog,
   InterviewBrief,
+  RoleKey,
+  RubricWeights,
 } from "../types";
 
 export interface DemoStoreShape {
@@ -22,6 +24,7 @@ export interface DemoStoreShape {
   emailLogs: EmailLog[];
   auditLog: AuditLogEntry[];
   batchRuns: BatchRun[];
+  rubricWeights: Partial<Record<RoleKey, RubricWeights>>;
 }
 
 function emptyStore(): DemoStoreShape {
@@ -35,6 +38,7 @@ function emptyStore(): DemoStoreShape {
     emailLogs: [],
     auditLog: [],
     batchRuns: [],
+    rubricWeights: {},
   };
 }
 

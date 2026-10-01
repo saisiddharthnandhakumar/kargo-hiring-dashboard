@@ -6,6 +6,7 @@ import { stripPii } from "@/lib/parsing/pii-strip";
 import { getRepositories, type CandidateEvidence, type CandidateScore } from "@/lib/repositories";
 import { aggregateScore } from "@/lib/scoring/aggregate";
 import { getRubric, type RoleKey } from "@/lib/rubric";
+import { getEffectiveRubric } from "@/lib/rubric/effective";
 import { autoGenerateEmailDraftIfNeeded } from "./generate-email-draft";
 
 export type PipelineResult =
@@ -24,14 +25,20 @@ async function scoreAndSave(params: {
   evidenceOutput: CandidateEvidenceOutput;
 }): Promise<{ ok: true; score: CandidateScore } | { ok: false; error: string }> {
   const repos = getRepositories();
+  const rubric = await getEffectiveRubric(params.role);
 
   const scoringResult = await scoreCandidateAgainstRubric({
     role: params.role,
     evidence: params.evidenceOutput,
+    rubric,
   });
   if (!scoringResult.ok) return { ok: false, error: scoringResult.error };
 
-  const aggregate = aggregateScore({ role: params.role, criteria: scoringResult.data.criteria });
+  const aggregate = aggregateScore({
+    role: params.role,
+    criteria: scoringResult.data.criteria,
+    weights: Object.fromEntries(rubric.criteria.map((c) => [c.key, c.weight])),
+  });
   if (!aggregate.ok) {
     return {
       ok: false,

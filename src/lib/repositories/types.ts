@@ -194,6 +194,9 @@ export interface CandidateRepository {
   create(input: Omit<Candidate, "id" | "createdAt">): Promise<Candidate>;
   getById(id: string): Promise<Candidate | null>;
   list(): Promise<Candidate[]>;
+  /** Candidates whose stored CV text is byte-identical — used to stop the
+   * same CV being uploaded onto a shortlist twice. */
+  findByRawText(rawText: string): Promise<Candidate[]>;
   updateName(id: string, name: string): Promise<Candidate>;
 }
 
@@ -253,6 +256,21 @@ export interface ScoreRepository {
   ): Promise<CandidateScore>;
 }
 
+/** Criterion key → weight as a fraction of 1. */
+export type RubricWeights = Record<string, number>;
+
+export interface RubricWeightRepository {
+  /** The founder's saved weights for a role, or null if they've never
+   * edited them (callers then fall back to the calibrated defaults). */
+  get(roleKey: RoleKey): Promise<RubricWeights | null>;
+  /** Replaces the role's full weight set and re-weights every stored score
+   * computed against that role's rubric (weightedScore, overallScore) in
+   * the same step, so the shortlist never shows a score built from stale
+   * weights. Passing null restores the calibrated defaults. Returns how
+   * many scores were re-weighted. */
+  save(roleKey: RoleKey, weights: RubricWeights | null, defaults: RubricWeights): Promise<number>;
+}
+
 export interface BriefRepository {
   upsert(
     applicationId: string,
@@ -297,4 +315,5 @@ export interface Repositories {
   emails: EmailRepository;
   audit: AuditRepository;
   batchRuns: BatchRunRepository;
+  rubricWeights: RubricWeightRepository;
 }

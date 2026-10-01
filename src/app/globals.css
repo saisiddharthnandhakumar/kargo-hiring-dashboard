@@ -106,3 +106,40 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Landing hero. Entrance plays exactly once (fill-mode both holds the end
+   frame); the background only ever animates `transform`, so it runs on the
+   compositor and never forces the text above it to repaint. */
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.6em, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.hero-rise {
+  animation: hero-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes paths-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1.08);
+  }
+  50% {
+    transform: translate3d(-3%, 2%, 0) scale(1.12);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.08);
+  }
+}
+.paths-drift {
+  animation: paths-drift 28s ease-in-out infinite;
+  will-change: transform;
+}
+.paths-drift-reverse {
+  animation: paths-drift 34s ease-in-out infinite reverse;
+  will-change: transform;
+}

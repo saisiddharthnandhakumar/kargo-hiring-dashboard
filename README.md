@@ -76,6 +76,12 @@ This project is already linked to a live Neon project (`neon link`, `.neon`) and
 4. The exact rubric text (criteria, weights, anchors, red flags) lives in
    `src/lib/rubric/{pm,spm}.ts`, verbatim from the calibrated rubric — the `/rubric` screen reads
    it directly, so an AI score never hides behind a number you can't check yourself.
+5. **Weights are founder-editable** on `/rubric` ("Edit weights" — whole percents, must total
+   100%). Saved weights live in the `rubric_weights` table (`neon/migrations/0003_rubric_weights.sql`)
+   and override the calibrated defaults above. Saving re-weights every stored score for that role
+   in the same transaction via `reweightCriteria` in `aggregate.ts` — pure arithmetic over the
+   existing per-criterion scores, no CV is re-read — and new scoring uses the saved weights too.
+   "Reset to calibrated" restores the defaults.
 
 Every AI call is versioned (`src/lib/ai/prompts/*`) and stored alongside its output
 (`modelId`, `promptVersion`) for auditability. A schema-validation failure retries once, then

@@ -6,6 +6,7 @@ import { createNeonBriefRepository } from "./brief-repository";
 import { createNeonCandidateRepository } from "./candidate-repository";
 import { createNeonEmailRepository } from "./email-repository";
 import { createNeonEvidenceRepository } from "./evidence-repository";
+import { createNeonRubricWeightRepository } from "./rubric-weight-repository";
 import { createNeonScoreRepository } from "./score-repository";
 
 export function buildNeonRepositories(): Repositories {
@@ -19,5 +20,6 @@ export function buildNeonRepositories(): Repositories {
     emails: createNeonEmailRepository(),
     audit: createNeonAuditRepository(),
     batchRuns: createNeonBatchRunRepository(),
+    rubricWeights: createNeonRubricWeightRepository(),
   };
 }

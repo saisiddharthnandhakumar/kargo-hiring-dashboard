@@ -53,6 +53,27 @@ export async function POST(request: Request) {
 
   const repos = getRepositories();
 
+  // Same CV, same role → never a second row on the shortlist. The exact
+  // extracted text is the identity check: a re-saved or re-exported file
+  // with any real change still goes through as a new application.
+  const sameCv = await repos.candidates.findByRawText(rawText);
+  if (sameCv.length > 0) {
+    const sameCvIds = new Set(sameCv.map((c) => c.id));
+    const existing = (await repos.applications.list({ roleKey, isCalibration: false })).find((a) =>
+      sameCvIds.has(a.candidateId),
+    );
+    if (existing) {
+      const name = sameCv.find((c) => c.id === existing.candidateId)?.name ?? "This candidate";
+      return NextResponse.json(
+        {
+          error: `${name} is already on the ${roleKey.toUpperCase()} shortlist — this CV was uploaded before.`,
+          applicationId: existing.id,
+        },
+        { status: 409 },
+      );
+    }
+  }
+
   // MVP demo mode stores parsed text only, not the original file bytes — no
   // file-storage bucket is wired up yet (Neon Object Storage would be the
   // natural home for this).

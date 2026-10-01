@@ -6,6 +6,7 @@ import { createMemoryBriefRepository } from "./brief-repository";
 import { createMemoryCandidateRepository } from "./candidate-repository";
 import { createMemoryEmailRepository } from "./email-repository";
 import { createMemoryEvidenceRepository } from "./evidence-repository";
+import { createMemoryRubricWeightRepository } from "./rubric-weight-repository";
 import { createMemoryScoreRepository } from "./score-repository";
 
 export function buildMemoryRepositories(): Repositories {
@@ -19,5 +20,6 @@ export function buildMemoryRepositories(): Repositories {
     emails: createMemoryEmailRepository(),
     audit: createMemoryAuditRepository(),
     batchRuns: createMemoryBatchRunRepository(),
+    rubricWeights: createMemoryRubricWeightRepository(),
   };
 }

@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { HISTORICAL_PATTERNS, getRubric, isValidRoleKey, type RoleKey } from "@/lib/rubric";
+import { RubricTable } from "@/components/rubric/RubricTable";
+import { HISTORICAL_PATTERNS, getDefaultWeights, isValidRoleKey, type RoleKey } from "@/lib/rubric";
+import { getEffectiveRubric } from "@/lib/rubric/effective";
+
+export const dynamic = "force-dynamic";
 
 function resolveRole(raw: string | string[] | undefined): RoleKey {
   const value = Array.isArray(raw) ? raw[0] : raw;
@@ -13,7 +17,7 @@ export default async function RubricPage({
 }) {
   const params = await searchParams;
   const role = resolveRole(params.role);
-  const rubric = getRubric(role);
+  const rubric = await getEffectiveRubric(role);
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
@@ -53,55 +57,7 @@ export default async function RubricPage({
         ))}
       </nav>
 
-      <section className="mt-6 overflow-x-auto rounded-lg border border-border">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-border bg-surface text-left">
-              <th className="min-w-[220px] px-4 py-3 font-medium text-foreground">Criterion</th>
-              <th className="w-20 px-4 py-3 font-medium text-foreground">Weight</th>
-              <th className="min-w-[200px] px-4 py-3 font-medium text-score-low">1 · Absent</th>
-              <th className="min-w-[200px] px-4 py-3 font-medium text-score-mid">2 · Weak</th>
-              <th className="min-w-[200px] px-4 py-3 font-medium text-foreground">3 · Present</th>
-              <th className="min-w-[200px] px-4 py-3 font-medium text-score-high">4 · Strong</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rubric.criteria.map((c, i) => (
-              <tr key={c.key} className={i % 2 === 1 ? "bg-surface/50" : undefined}>
-                <td className="align-top border-t border-border px-4 py-3">
-                  <p className="font-medium text-foreground">{c.name}</p>
-                  <p className="mt-1 text-xs text-muted">{c.description}</p>
-                  {c.redFlag && (
-                    <p className="mt-2 text-xs text-score-low">
-                      <span className="font-medium">Red flag:</span> {c.redFlag}
-                    </p>
-                  )}
-                  {c.note && (
-                    <p className="mt-2 text-xs text-score-mid">
-                      <span className="font-medium">Note:</span> {c.note}
-                    </p>
-                  )}
-                </td>
-                <td className="align-top border-t border-border px-4 py-3 font-mono text-foreground">
-                  {Math.round(c.weight * 100)}%
-                </td>
-                <td className="align-top border-t border-border px-4 py-3 text-foreground">
-                  {c.anchors[1]}
-                </td>
-                <td className="align-top border-t border-border px-4 py-3 text-foreground">
-                  {c.anchors[2]}
-                </td>
-                <td className="align-top border-t border-border px-4 py-3 text-foreground">
-                  {c.anchors[3]}
-                </td>
-                <td className="align-top border-t border-border px-4 py-3 text-foreground">
-                  {c.anchors[4]}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+      <RubricTable key={role} role={role} rubric={rubric} defaultWeights={getDefaultWeights(role)} />
 
       <article className="mt-4 rounded-lg border border-accent/30 bg-accent/5 p-4">
         <h2 className="font-medium text-foreground">{rubric.historicalSignalRule.label}</h2>
